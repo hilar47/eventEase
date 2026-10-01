@@ -1,0 +1,72 @@
+@page "/events/{Id:guid}"
+@inject EventService Svc
+@inject ICopilotService Copilot
+
+@if (ev is null)
+{
+    <p>Event not found. <a href="/">Back</a></p>
+}
+else
+{
+    <a href="/">← All events</a>
+    <h1>@ev.Title</h1>
+    <p class="muted">@ev.Date.ToString("ddd, d MMM yyyy h:mm tt") · @ev.Location</p>
+
+    <div class="stats">
+        <div class="stat"><b>@ev.Registrations.Count</b>Registered</div>
+        <div class="stat"><b>@ev.SpotsLeft</b>Spots left</div>
+        <div class="stat"><b>@ev.Checked</b>Checked in</div>
+        <div class="stat"><b>@ev.AttendanceRate.ToString("P0")</b>Attendance</div>
+    </div>
+
+    <div class="card copilot">
+        <strong>✨ Copilot insights</strong>
+        <ul>@foreach (var t in Copilot.Insights(ev)) { <li>@t</li> }</ul>
+    </div>
+
+    <h2>Register attendee</h2>
+    <div class="card form">
+        <label>Name <input @bind="name" @bind:event="oninput" /></label>
+        <label>Email <input type="email" @bind="email" @bind:event="oninput" /></label>
+        <button class="btn" @onclick="Register">Register</button>
+        @if (msg != "") { <p class="@(ok ? "ok" : "err")">@msg</p> }
+    </div>
+
+    <h2>Attendance</h2>
+    <input class="search" placeholder="Search name or email…" @bind="search" @bind:event="oninput" />
+    <table>
+        <thead><tr><th>Name</th><th>Email</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var r in Filtered)
+        {
+            <tr>
+                <td>@r.Name</td><td>@r.Email</td>
+                <td>@(r.CheckedIn ? $"✅ In at {r.CheckedInAt:h:mm tt}" : "⏳ Not arrived")</td>
+                <td>
+                    <button class="btn small" @onclick="() => Svc.ToggleCheckIn(ev.Id, r.Id)">@(r.CheckedIn ? "Undo" : "Check in")</button>
+                    <button class="btn small ghost" @onclick="() => Svc.Cancel(ev.Id, r.Id)">Remove</button>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+    EventItem? ev;
+    string name = "", email = "", msg = "", search = "";
+    bool ok;
+
+    protected override void OnParametersSet() => ev = Svc.Get(Id);
+
+    IEnumerable<Registration> Filtered => ev!.Registrations.Where(r =>
+        r.Name.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+        r.Email.Contains(search, StringComparison.OrdinalIgnoreCase));
+
+    void Register()
+    {
+        (ok, msg) = Svc.Register(Id, name, email);
+        if (ok) { name = ""; email = ""; }
+    }
+}

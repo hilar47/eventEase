@@ -8,37 +8,31 @@
 <div class="grid">
 @foreach (var e in Svc.GetAll())
 {
-    <div class="card">
+    <div class="card" @key="e.Id">
         <h3>@e.Title</h3>
         <p class="muted">@e.Date.ToString("ddd, d MMM yyyy h:mm tt") · @e.Location</p>
         <p>@e.Description</p>
         <div class="bar"><div style="width:@(e.Capacity == 0 ? 0 : e.Registrations.Count * 100 / e.Capacity)%"></div></div>
         <p class="muted">@e.Registrations.Count / @e.Capacity registered · @e.Checked checked in</p>
-        <a class="btn" href="/events/@e.Id">Manage</a>
+        <a class="btn" href="events/@e.Id">Manage</a>
         <button class="btn ghost" @onclick="() => Svc.Delete(e.Id)">Delete</button>
     </div>
 }
 </div>
 
 <h2>Create event</h2>
-<div class="card form">
-    <label>Title <input @bind="draft.Title" @bind:event="oninput" /></label>
-    <label>Location <input @bind="draft.Location" @bind:event="oninput" /></label>
-    <label>Date &amp; time <input type="datetime-local" @bind="draft.Date" /></label>
-    <label>Capacity <input type="number" min="1" @bind="draft.Capacity" /></label>
-    <label>Description <textarea rows="3" @bind="draft.Description"></textarea></label>
+<EditForm Model="draft" OnValidSubmit="Create" @key="draft.Id">
+    <DataAnnotationsValidator />
+    <EventCard @bind-Value="draft" />
 
     <div class="copilot">
         <strong>✨ Copilot</strong>
-        <button class="btn ghost" @onclick="Draft">Draft description</button>
-        <button class="btn ghost" @onclick="Agenda">Suggest agenda</button>
-        @if (agenda.Count > 0)
-        {
-            <ul>@foreach (var a in agenda) { <li>@a</li> }</ul>
-        }
+        <button type="button" class="btn ghost" @onclick="Draft">Draft description</button>
+        <button type="button" class="btn ghost" @onclick="Agenda">Suggest agenda</button>
+        @if (agenda.Count > 0) { <ul>@foreach (var a in agenda) { <li>@a</li> }</ul> }
     </div>
-    <button class="btn" @onclick="Create" disabled="@string.IsNullOrWhiteSpace(draft.Title)">Create event</button>
-</div>
+    <button type="submit" class="btn">Create event</button>
+</EditForm>
 
 @code {
     EventItem draft = new();

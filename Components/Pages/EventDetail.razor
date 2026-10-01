@@ -1,16 +1,20 @@
 @page "/events/{Id:guid}"
 @inject EventService Svc
 @inject ICopilotService Copilot
+@inject SessionState Session
 
 @if (ev is null)
 {
-    <p>Event not found. <a href="/">Back</a></p>
+    <h1>Event not found</h1>
+    <p>This event may have been deleted. <a href="/">Back to events</a></p>
 }
 else
 {
+    <PageTitle>@ev.Title</PageTitle>
     <a href="/">← All events</a>
     <h1>@ev.Title</h1>
     <p class="muted">@ev.Date.ToString("ddd, d MMM yyyy h:mm tt") · @ev.Location</p>
+    @if (Session.IsRegistered(ev.Id)) { <p class="ok">✔ You're registered for this event (this session)</p> }
 
     <div class="stats">
         <div class="stat"><b>@ev.Registrations.Count</b>Registered</div>
@@ -25,21 +29,24 @@ else
     </div>
 
     <h2>Register attendee</h2>
-    <div class="card form">
-        <label>Name <input @bind="name" @bind:event="oninput" /></label>
-        <label>Email <input type="email" @bind="email" @bind:event="oninput" /></label>
-        <button class="btn" @onclick="Register">Register</button>
+    <EditForm Model="form" OnValidSubmit="Register" class="card form">
+        <DataAnnotationsValidator />
+        <label>Name <InputText @bind-Value="form.Name" /></label>
+        <ValidationMessage For="() => form.Name" />
+        <label>Email <InputText type="email" @bind-Value="form.Email" /></label>
+        <ValidationMessage For="() => form.Email" />
+        <button type="submit" class="btn" disabled="@(ev.SpotsLeft == 0)">@(ev.SpotsLeft == 0 ? "Event full" : "Register")</button>
         @if (msg != "") { <p class="@(ok ? "ok" : "err")">@msg</p> }
-    </div>
+    </EditForm>
 
-    <h2>Attendance</h2>
+    <h2>Attendance tracker</h2>
     <input class="search" placeholder="Search name or email…" @bind="search" @bind:event="oninput" />
     <table>
         <thead><tr><th>Name</th><th>Email</th><th>Status</th><th></th></tr></thead>
         <tbody>
         @foreach (var r in Filtered)
         {
-            <tr>
+            <tr @key="r.Id">
                 <td>@r.Name</td><td>@r.Email</td>
                 <td>@(r.CheckedIn ? $"✅ In at {r.CheckedInAt:h:mm tt}" : "⏳ Not arrived")</td>
                 <td>
@@ -55,10 +62,18 @@ else
 @code {
     [Parameter] public Guid Id { get; set; }
     EventItem? ev;
-    string name = "", email = "", msg = "", search = "";
+    RegistrationForm form = new();
+    string msg = "", search = "";
     bool ok;
 
-    protected override void OnParametersSet() => ev = Svc.Get(Id);
+    protected override void OnParametersSet()
+    {
+        ev = Svc.Get(Id);
+        msg = "";
+        // Prefill from the session so returning users don't retype.
+        if (Session.HasProfile && form.Name == "" && form.Email == "")
+            form = new RegistrationForm { Name = Session.Name, Email = Session.Email };
+    }
 
     IEnumerable<Registration> Filtered => ev!.Registrations.Where(r =>
         r.Name.Contains(search, StringComparison.OrdinalIgnoreCase) ||
@@ -66,7 +81,7 @@ else
 
     void Register()
     {
-        (ok, msg) = Svc.Register(Id, name, email);
-        if (ok) { name = ""; email = ""; }
+        (ok, msg) = Svc.Register(Id, form.Name, form.Email);
+        if (ok) { Session.Remember(form.Name.Trim(), form.Email.Trim(), Id); form = new RegistrationForm { Name = Session.Name, Email = Session.Email }; }
     }
 }

@@ -1,0 +1,28 @@
+@page "/attendance"
+@inject EventService Svc
+
+<PageTitle>Attendance · EventEase</PageTitle>
+<h1>Attendance tracker</h1>
+
+@{ var all = Svc.GetAll(); }
+@if (all.Count == 0)
+{
+    <p class="muted">No events yet. <a href="/">Create one</a>.</p>
+}
+else
+{
+    <table>
+        <thead><tr><th>Event</th><th>Registered</th><th>Checked in</th><th>Rate</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var e in all)
+        {
+            <tr @key="e.Id">
+                <td>@e.Title</td><td>@e.Registrations.Count / @e.Capacity</td><td>@e.Checked</td>
+                <td style="min-width:120px"><div class="bar"><div style="width:@((int)(e.AttendanceRate * 100))%"></div></div> @e.AttendanceRate.ToString("P0")</td>
+                <td><a class="btn small" href="events/@e.Id">Check in</a></td>
+            </tr>
+        }
+        </tbody>
+        <tfoot><tr><th>Total</th><th>@all.Sum(e => e.Registrations.Count)</th><th>@all.Sum(e => e.Checked)</th><th colspan="2"></th></tr></tfoot>
+    </table>
+}

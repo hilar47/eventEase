@@ -1,0 +1,36 @@
+@implements IDisposable
+
+@* Reusable event editor card. Usage: <EventCard @bind-Value="draft" /> inside an <EditForm>. *@
+<div class="card editor">
+    <h3>Event details</h3>
+    <label>Title <InputText @bind-Value="Value.Title" /></label>
+    <ValidationMessage For="() => Value.Title" />
+    <label>Location <InputText @bind-Value="Value.Location" /></label>
+    <ValidationMessage For="() => Value.Location" />
+    <label>Date &amp; time <InputDate Type="InputDateType.DateTimeLocal" @bind-Value="Value.Date" /></label>
+    <label>Capacity <InputNumber @bind-Value="Value.Capacity" /></label>
+    <ValidationMessage For="() => Value.Capacity" />
+    <label>Description <InputTextArea rows="3" @bind-Value="Value.Description" /></label>
+    <ValidationMessage For="() => Value.Description" />
+    <p class="muted">Live preview: <b>@(string.IsNullOrWhiteSpace(Value.Title) ? "Untitled" : Value.Title)</b>
+        · @Value.Date.ToString("d MMM, h:mm tt") · @Value.Location · cap @Value.Capacity</p>
+</div>
+
+@code {
+    [Parameter] public EventItem Value { get; set; } = new();
+    [Parameter] public EventCallback<EventItem> ValueChanged { get; set; }
+    [CascadingParameter] private EditContext? Ctx { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (Ctx is not null) Ctx.OnFieldChanged += OnFieldChanged;
+    }
+
+    // Push changes to the parent so @bind-Value is genuinely two-way.
+    private void OnFieldChanged(object? sender, FieldChangedEventArgs e) => _ = ValueChanged.InvokeAsync(Value);
+
+    public void Dispose()
+    {
+        if (Ctx is not null) Ctx.OnFieldChanged -= OnFieldChanged;
+    }
+}

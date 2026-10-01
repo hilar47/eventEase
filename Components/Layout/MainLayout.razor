@@ -1,3 +1,19 @@
 @inherits LayoutComponentBase
-<header><a href="/" class="brand">🎟️ EventEase</a><span class="tag">Copilot-assisted</span></header>
+@inject SessionState Session
+@implements IDisposable
+
+<header>
+    <a href="/" class="brand">🎟️ EventEase</a><span class="tag">Copilot-assisted</span>
+    <nav>
+        <NavLink href="" Match="NavLinkMatch.All">Events</NavLink>
+        <NavLink href="attendance">Attendance</NavLink>
+    </nav>
+    <span class="who">@(Session.HasProfile ? $"👤 {Session.Name}" : "Guest")</span>
+</header>
 <main>@Body</main>
+
+@code {
+    protected override void OnInitialized() => Session.Changed += Refresh;
+    void Refresh() => InvokeAsync(StateHasChanged);
+    public void Dispose() => Session.Changed -= Refresh;
+}

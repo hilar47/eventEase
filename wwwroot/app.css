@@ -17,3 +17,7 @@ table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;ove
 th,td{padding:10px;text-align:left;border-bottom:1px solid #eee;font-size:.9rem}
 .search{margin-bottom:10px}.ok{color:#15803d}.err{color:#b91c1c}
 @media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}}
+nav{display:flex;gap:14px;margin-left:16px;flex:1}nav a{color:#ffffffcc;text-decoration:none;padding:4px 2px}nav a.active{color:#fff;border-bottom:2px solid #fff}
+.who{font-size:.85rem}.editor label{display:block;margin-bottom:6px;font-size:.9rem}
+.validation-message{color:#b91c1c;font-size:.8rem;margin:-2px 0 8px}input.invalid,textarea.invalid{border-color:#b91c1c}
+.modified.valid{border-color:#15803d}tfoot th{background:#f3f4f6}
